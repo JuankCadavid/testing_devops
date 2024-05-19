@@ -90,3 +90,4 @@ Nest is [MIT licensed](LICENSE).
 
 - Testing feat 1
 - Testing feat 2
+- Testing fix 1
