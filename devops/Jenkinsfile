@@ -60,7 +60,7 @@ pipeline {
 
         stage('Disable branch protection') {
             when {
-                branch 'main'
+                branch 'master'
             }
             steps {
                 script {
@@ -85,7 +85,7 @@ pipeline {
 
         stage('Re-enable branch protection') {
             when {
-                branch 'main'
+                branch 'master'
             }
             steps {
                 script {
