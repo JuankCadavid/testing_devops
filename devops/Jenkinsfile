@@ -11,6 +11,13 @@ pipeline {
     }
 
     stages {
+
+        stage('Print branch name') {
+            steps {
+                echo "Branch name is: ${env.GIT_BRANCH}"
+            }
+        }
+
         stage('Cloning Git') {
             steps {
                 git branch: 'master', url: 'https://github.com/JuankCadavid/testing_devops'
@@ -62,32 +69,41 @@ pipeline {
         stage('Disable branch protection') {
 
             steps {
-                script {
-                    def response = httpRequest(
+                 script {
+                    def disableProtection = [
+                        required_status_checks: null,
+                        enforce_admins: false,
+                        required_pull_request_reviews: null,
+                        restrictions: null
+                    ]
+                    httpRequest(
                         url: "https://api.github.com/repos/${GITHUB_REPOSITORY}/branches/master/protection",
-                        customHeaders: [[name: 'Authorization', value: "token ${GITHUB_TOKEN}"]],
-                        validResponseCodes: '204',
-                        httpMode: 'DELETE'
+                        httpMode: 'DELETE',
+                        contentType: 'APPLICATION_JSON',
+                        customHeaders: [
+                            [name: 'Authorization', value: "token ${GITHUB_TOKEN}"],
+                            [name: 'Accept', value: 'application/vnd.github.luke-cage-preview+json']
+                        ],
+                        validResponseCodes: '204,404'
                     )
-                    if (response.status != 204) {
-                        error "Failed to disable branch protection: ${response.content}"
-                    }
                 }
             }
         }
 
         stage('Release') {
             steps {
+            withCredentials([string(credentialsId: 'gitHubToken', variable: 'GITHUB_TOKEN')]) {
                 dir('devops') {
-                    sh 'npx semantic-release'
+                sh 'npx semantic-release'
                 }
+            }
             }
         }
 
         stage('Re-enable branch protection') {
 
             steps {
-                script {
+                 script {
                     def protectionConfig = [
                         required_status_checks: [
                             strict: true,
@@ -102,17 +118,16 @@ pipeline {
                         ],
                         restrictions: null
                     ]
-                    def response = httpRequest(
+                    httpRequest(
                         url: "https://api.github.com/repos/${GITHUB_REPOSITORY}/branches/master/protection",
-                        customHeaders: [[name: 'Authorization', value: "token ${GITHUB_TOKEN}"]],
                         httpMode: 'PUT',
                         contentType: 'APPLICATION_JSON',
                         requestBody: groovy.json.JsonOutput.toJson(protectionConfig),
-                        validResponseCodes: '200'
+                        customHeaders: [
+                            [name: 'Authorization', value: "token ${GITHUB_TOKEN}"],
+                            [name: 'Accept', value: 'application/vnd.github.luke-cage-preview+json']
+                        ]
                     )
-                    if (response.status != 200) {
-                        error "Failed to re-enable branch protection: ${response.content}"
-                    }
                 }
             }
         }
