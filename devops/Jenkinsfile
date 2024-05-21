@@ -12,15 +12,16 @@ pipeline {
 
     stages {
 
-        stage('Print branch name') {
-            steps {
-                echo "Branch name is: ${env.GIT_BRANCH}"
-            }
-        }
-
         stage('Cloning Git') {
             steps {
                 git branch: 'master', url: 'https://github.com/JuankCadavid/testing_devops'
+            }
+        }
+
+        stage('Print branch name') {
+            steps {
+                echo "Branch name is: ${env.GIT_BRANCH}"
+                sh 'git branch'
             }
         }
 
@@ -94,6 +95,8 @@ pipeline {
             steps {
             withCredentials([string(credentialsId: 'gitHubToken', variable: 'GITHUB_TOKEN')]) {
                 dir('devops') {
+                sh 'git branch'
+                sh 'git checkout master'
                 sh 'npx semantic-release'
                 }
             }
