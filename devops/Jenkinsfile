@@ -1,0 +1,121 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs "Node 20"
+    }
+
+    environment {
+        GITHUB_TOKEN = credentials('gitHubToken')
+    }
+
+    stages {
+        stage('Cloning Git') {
+            steps {
+                git branch: 'master', url: 'https://github.com/JuankCadavid/testing_devops'
+            }
+        }
+
+        stage('Startup') {
+            steps {
+                dir('devops') {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    try {
+                        dir('devops') {
+                            sh 'npm test'
+                        }
+                    } catch (Exception e) {
+                        env.BUILD_EXCEPTION = "Stage: ${env.STAGE_NAME}, Error: ${e.message}"
+                        env.FAILED_STAGE = "Stage: ${env.STAGE_NAME}"
+                        e.printStackTrace() // print the stack trace
+                        throw e // rethrow the exception to fail the build
+                    }
+                }
+            }
+        }
+
+        stage('Linting') {
+            steps {
+                script {
+                    try {
+                        dir('devops') {
+                            sh 'npm run lint || exit 1'
+                        }
+                    } catch (Exception e) {
+                        env.BUILD_EXCEPTION = "Stage: ${env.STAGE_NAME}, Error: ${e.message}"
+                        env.FAILED_STAGE = "Stage: ${env.STAGE_NAME}"
+                        e.printStackTrace() // print the stack trace
+                        throw e // rethrow the exception to fail the build
+                    }
+                }
+            }
+        }
+
+        stage('Disable branch protection') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    def response = httpRequest(
+                        url: "https://api.github.com/repos/${env.GITHUB_REPOSITORY}/branches/main/protection",
+                        customHeaders: [[name: 'Authorization', value: "token ${GITHUB_TOKEN}"]],
+                        validResponseCodes: '204',
+                        httpMode: 'DELETE'
+                    )
+                    if (response.status != 204) {
+                        error "Failed to disable branch protection: ${response.content}"
+                    }
+                }
+            }
+        }
+
+        stage('Release') {
+            steps {
+                sh 'npx semantic-release'
+            }
+        }
+
+        stage('Re-enable branch protection') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    def protectionConfig = [
+                        required_status_checks: [
+                            strict: true,
+                            contexts: []
+                        ],
+                        enforce_admins: true,
+                        required_pull_request_reviews: [
+                            dismissal_restrictions: [:],
+                            dismiss_stale_reviews: true,
+                            require_code_owner_reviews: true,
+                            required_approving_review_count: 1
+                        ],
+                        restrictions: null
+                    ]
+                    def response = httpRequest(
+                        url: "https://api.github.com/repos/${env.GITHUB_REPOSITORY}/branches/main/protection",
+                        customHeaders: [[name: 'Authorization', value: "token ${GITHUB_TOKEN}"]],
+                        httpMode: 'PUT',
+                        contentType: 'APPLICATION_JSON',
+                        requestBody: groovy.json.JsonOutput.toJson(protectionConfig),
+                        validResponseCodes: '200'
+                    )
+                    if (response.status != 200) {
+                        error "Failed to re-enable branch protection: ${response.content}"
+                    }
+                }
+            }
+        }
+    }
+}
