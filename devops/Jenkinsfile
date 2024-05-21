@@ -7,6 +7,7 @@ pipeline {
 
     environment {
         GITHUB_TOKEN = credentials('gitHubToken')
+        GITHUB_REPOSITORY = 'JuankCadavid/testing_devops'
     }
 
     stages {
@@ -65,7 +66,7 @@ pipeline {
             steps {
                 script {
                     def response = httpRequest(
-                        url: "https://api.github.com/repos/${env.GITHUB_REPOSITORY}/branches/main/protection",
+                        url: "https://api.github.com/repos/${GITHUB_REPOSITORY}/branches/master/protection",
                         customHeaders: [[name: 'Authorization', value: "token ${GITHUB_TOKEN}"]],
                         validResponseCodes: '204',
                         httpMode: 'DELETE'
@@ -79,7 +80,9 @@ pipeline {
 
         stage('Release') {
             steps {
-                sh 'npx semantic-release'
+                dir('devops') {
+                    sh 'npx semantic-release'
+                }
             }
         }
 
@@ -104,7 +107,7 @@ pipeline {
                         restrictions: null
                     ]
                     def response = httpRequest(
-                        url: "https://api.github.com/repos/${env.GITHUB_REPOSITORY}/branches/main/protection",
+                        url: "https://api.github.com/repos/${GITHUB_REPOSITORY}/branches/master/protection",
                         customHeaders: [[name: 'Authorization', value: "token ${GITHUB_TOKEN}"]],
                         httpMode: 'PUT',
                         contentType: 'APPLICATION_JSON',
