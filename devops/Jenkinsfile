@@ -60,9 +60,7 @@ pipeline {
         }
 
         stage('Disable branch protection') {
-            when {
-                branch 'master'
-            }
+
             steps {
                 script {
                     def response = httpRequest(
@@ -87,9 +85,7 @@ pipeline {
         }
 
         stage('Re-enable branch protection') {
-            when {
-                branch 'master'
-            }
+
             steps {
                 script {
                     def protectionConfig = [
