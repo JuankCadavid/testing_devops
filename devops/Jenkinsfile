@@ -18,6 +18,20 @@ pipeline {
     }
 
     stages {
+
+        stage('Validate Branch') {
+            steps {
+                script {
+                    echo "${params.GIT_BRANCH}"
+                    def expectedBranch = 'master'
+                    if (params.GIT_BRANCH != expectedBranch) {
+                        currentBuild.result = 'ABORTED'
+                        error "Aborting build: Branch is ${params.GIT_BRANCH}}, but expected ${expectedBranch}"
+                    }
+                }
+            }
+        }
+
         stage('Checkout GitSCM') {
             steps {
                 echo "${params.GIT_BRANCH}"
@@ -29,19 +43,6 @@ pipeline {
             steps {
                 echo "${params.GIT_BRANCH}"
                 git branch: 'master', url: 'https://github.com/JuankCadavid/testing_devops'
-            }
-        }
-
-        stage('Validate Branch') {
-            steps {
-                script {
-                    echo "${params.GIT_BRANCH}"
-                    echo "${params.GIT_BRANCH}"
-                    def expectedBranch = 'master'
-                    if (params.GIT_BRANCH != expectedBranch) {
-                        error "Aborting build: Branch is ${params.GIT_BRANCH}}, but expected ${expectedBranch}"
-                    }
-                }
             }
         }
 
