@@ -12,9 +12,6 @@ pipeline {
 
         parameters {
         string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Project Git Branch')
-        choice(name: "DEPLOY_TO", choices: ["", "Develop", "Test", "Production"])
-        booleanParam(name: 'SONARQUBE_ANALYSIS', defaultValue: false, description: '')
-        booleanParam(name: 'MVN_BUILD', defaultValue: true, description: '')
     }
 
     stages {
@@ -37,10 +34,11 @@ pipeline {
         stage('Validate Branch') {
             steps {
                 script {
+                    echo "Validating branch ${branchName}"
                     def expectedBranch = 'master'
                     if (branchName != expectedBranch) {
                         currentBuild.result = 'ABORTED'
-                        error "Aborting build: Branch is ${branchName}, but expected ${expectedBranch}"
+                        error "Aborting build: Branch is ${branchName}, but expected ${branchName}"
                     }
                 }
             }
