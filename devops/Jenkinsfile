@@ -12,6 +12,17 @@ pipeline {
 
     stages {
 
+        stage('Validate Branch') {
+            steps {
+                script {
+                    def expectedBranch = 'master'
+                    if (env.GIT_BRANCH != expectedBranch) {
+                        error "Aborting build: Branch is ${env.GIT_BRANCH}, but expected ${expectedBranch}"
+                    }
+                }
+            }
+        }
+
         stage('Cloning Git') {
             steps {
                 git branch: 'master', url: 'https://github.com/JuankCadavid/testing_devops'
