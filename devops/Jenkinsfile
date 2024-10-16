@@ -36,9 +36,9 @@ pipeline {
             steps {
                 script {
                     echo "${params.GIT_BRANCH}"
-                    echo "${params.GIT_BRANCH}}"
+                    echo "${params.GIT_BRANCH}"
                     def expectedBranch = 'master'
-                    if (params.GIT_BRANCH} != expectedBranch) {
+                    if (params.GIT_BRANCH != expectedBranch) {
                         error "Aborting build: Branch is ${params.GIT_BRANCH}}, but expected ${expectedBranch}"
                     }
                 }
