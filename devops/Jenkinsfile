@@ -37,12 +37,10 @@ pipeline {
         stage('Validate Branch') {
             steps {
                 script {
-                    echo "env branch ${env.BRANCH_NAME}"
-                    echo "params branch ${params.GIT_BRANCH}"
                     def expectedBranch = 'master'
-                    if (params.GIT_BRANCH != expectedBranch) {
+                    if (branchName != expectedBranch) {
                         currentBuild.result = 'ABORTED'
-                        error "Aborting build: Branch is ${params.GIT_BRANCH}}, but expected ${expectedBranch}"
+                        error "Aborting build: Branch is ${branchName}, but expected ${expectedBranch}"
                     }
                 }
             }
