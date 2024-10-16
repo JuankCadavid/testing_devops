@@ -19,23 +19,24 @@ pipeline {
 
     stages {
 
+        stage('Checkout GitSCM') {
+            steps {
+                echo "${params.GIT_BRANCH}"
+                git(url: 'https://github.com/JuankCadavid/testing_devops', branch: "${params.GIT_BRANCH}", credentialsId: 'github-key-pat')
+            }
+        }
+
         stage('Validate Branch') {
             steps {
                 script {
-                    echo "${params.GIT_BRANCH}"
+                    echo "env branch ${env.BRANCH_NAME}"
+                    echo "params branch ${params.GIT_BRANCH}"
                     def expectedBranch = 'master'
                     if (params.GIT_BRANCH != expectedBranch) {
                         currentBuild.result = 'ABORTED'
                         error "Aborting build: Branch is ${params.GIT_BRANCH}}, but expected ${expectedBranch}"
                     }
                 }
-            }
-        }
-
-        stage('Checkout GitSCM') {
-            steps {
-                echo "${params.GIT_BRANCH}"
-                git(url: 'https://github.com/JuankCadavid/testing_devops', branch: "${params.GIT_BRANCH}", credentialsId: 'github-key-pat')
             }
         }
 
