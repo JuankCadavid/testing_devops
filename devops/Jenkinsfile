@@ -53,7 +53,7 @@ pipeline {
 
         stage('Print branch name') {
             steps {
-                echo "Branch name is: ${env.BRANCH_NAME}"
+                echo "Branch name is where HP: ${env.BRANCH_NAME}"
                 sh 'git branch'
             }
         }
