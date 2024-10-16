@@ -18,6 +18,14 @@ pipeline {
     }
 
     stages {
+        stage('Get Branch Name') {
+            steps {
+                script {
+                    def branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                    echo "Branch name is: ${branchName}"
+                }
+            }
+        }
 
         stage('Checkout GitSCM') {
             steps {
