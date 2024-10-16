@@ -11,27 +11,26 @@ pipeline {
     }
 
     stages {
-
-        stage('Validate Branch') {
-            steps {
-                script {
-                    def expectedBranch = 'master'
-                    if (env.GIT_BRANCH != expectedBranch) {
-                        error "Aborting build: Branch is ${env.GIT_BRANCH}, but expected ${expectedBranch}"
-                    }
-                }
-            }
-        }
-
         stage('Cloning Git') {
             steps {
                 git branch: 'master', url: 'https://github.com/JuankCadavid/testing_devops'
             }
         }
 
+        stage('Validate Branch') {
+            steps {
+                script {
+                    def expectedBranch = 'master'
+                    if (env.BRANCH_NAME != expectedBranch) {
+                        error "Aborting build: Branch is ${env.BRANCH_NAME}, but expected ${expectedBranch}"
+                    }
+                }
+            }
+        }
+
         stage('Print branch name') {
             steps {
-                echo "Branch name is: ${env.GIT_BRANCH}"
+                echo "Branch name is: ${env.BRANCH_NAME}"
                 sh 'git branch'
             }
         }
@@ -79,9 +78,11 @@ pipeline {
         }
 
         stage('Disable branch protection') {
-
+            when {
+                branch 'master'
+            }
             steps {
-                 script {
+                script {
                     def disableProtection = [
                         required_status_checks: null,
                         enforce_admins: false,
@@ -103,21 +104,26 @@ pipeline {
         }
 
         stage('Release') {
-            steps {
-            withCredentials([string(credentialsId: 'gitHubToken', variable: 'GITHUB_TOKEN')]) {
-                dir('devops') {
-                sh 'git branch'
-                sh 'git checkout master'
-                sh 'npx semantic-release'
-                }
+            when {
+                branch 'master'
             }
+            steps {
+                withCredentials([string(credentialsId: 'gitHubToken', variable: 'GITHUB_TOKEN')]) {
+                    dir('devops') {
+                        sh 'git branch'
+                        sh 'git checkout master'
+                        sh 'npx semantic-release'
+                    }
+                }
             }
         }
 
         stage('Re-enable branch protection') {
-
+            when {
+                branch 'master'
+            }
             steps {
-                 script {
+                script {
                     def protectionConfig = [
                         required_status_checks: [
                             strict: true,
