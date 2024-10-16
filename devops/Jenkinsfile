@@ -10,7 +10,21 @@ pipeline {
         GITHUB_REPOSITORY = 'JuankCadavid/testing_devops'
     }
 
+        parameters {
+        string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Project Git Branch')
+        choice(name: "DEPLOY_TO", choices: ["", "Develop", "Test", "Production"])
+        booleanParam(name: 'SONARQUBE_ANALYSIS', defaultValue: false, description: '')
+        booleanParam(name: 'MVN_BUILD', defaultValue: true, description: '')
+    }
+
     stages {
+        stage('Checkout GitSCM') {
+            steps {
+                echo "${params.GIT_BRANCH}"
+                git(url: 'https://github.com/JuankCadavid/testing_devops', branch: "${params.GIT_BRANCH}", credentialsId: 'github-key-pat')
+            }
+        }
+
         stage('Cloning Git') {
             steps {
                 git branch: 'master', url: 'https://github.com/JuankCadavid/testing_devops'
