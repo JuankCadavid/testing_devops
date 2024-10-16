@@ -10,28 +10,44 @@ pipeline {
         GITHUB_REPOSITORY = 'JuankCadavid/testing_devops'
     }
 
-    stages {
+        parameters {
+        string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Project Git Branch')
+        choice(name: "DEPLOY_TO", choices: ["", "Develop", "Test", "Production"])
+        booleanParam(name: 'SONARQUBE_ANALYSIS', defaultValue: false, description: '')
+        booleanParam(name: 'MVN_BUILD', defaultValue: true, description: '')
+    }
 
-        stage('Validate Branch') {
+    stages {
+        stage('Checkout GitSCM') {
             steps {
-                script {
-                    def expectedBranch = 'master'
-                    if (env.GIT_BRANCH != expectedBranch) {
-                        error "Aborting build: Branch is ${env.GIT_BRANCH}, but expected ${expectedBranch}"
-                    }
-                }
+                echo "${params.GIT_BRANCH}"
+                git(url: 'https://github.com/JuankCadavid/testing_devops', branch: "${params.GIT_BRANCH}", credentialsId: 'github-key-pat')
             }
         }
 
         stage('Cloning Git') {
             steps {
+                echo "${params.GIT_BRANCH}"
                 git branch: 'master', url: 'https://github.com/JuankCadavid/testing_devops'
+            }
+        }
+
+        stage('Validate Branch') {
+            steps {
+                script {
+                    echo "${params.GIT_BRANCH}"
+                    echo "${params.GIT_BRANCH}"
+                    def expectedBranch = 'master'
+                    if (params.GIT_BRANCH != expectedBranch) {
+                        error "Aborting build: Branch is ${params.GIT_BRANCH}}, but expected ${expectedBranch}"
+                    }
+                }
             }
         }
 
         stage('Print branch name') {
             steps {
-                echo "Branch name is: ${env.GIT_BRANCH}"
+                echo "Branch name is: ${env.BRANCH_NAME}"
                 sh 'git branch'
             }
         }
@@ -79,9 +95,11 @@ pipeline {
         }
 
         stage('Disable branch protection') {
-
+            when {
+                branch 'master'
+            }
             steps {
-                 script {
+                script {
                     def disableProtection = [
                         required_status_checks: null,
                         enforce_admins: false,
@@ -103,21 +121,26 @@ pipeline {
         }
 
         stage('Release') {
-            steps {
-            withCredentials([string(credentialsId: 'gitHubToken', variable: 'GITHUB_TOKEN')]) {
-                dir('devops') {
-                sh 'git branch'
-                sh 'git checkout master'
-                sh 'npx semantic-release'
-                }
+            when {
+                branch 'master'
             }
+            steps {
+                withCredentials([string(credentialsId: 'gitHubToken', variable: 'GITHUB_TOKEN')]) {
+                    dir('devops') {
+                        sh 'git branch'
+                        sh 'git checkout master'
+                        sh 'npx semantic-release'
+                    }
+                }
             }
         }
 
         stage('Re-enable branch protection') {
-
+            when {
+                branch 'master'
+            }
             steps {
-                 script {
+                script {
                     def protectionConfig = [
                         required_status_checks: [
                             strict: true,
