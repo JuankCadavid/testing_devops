@@ -18,24 +18,22 @@ pipeline {
         stage('Get Branch Name') {
             steps {
                 script {
-                    def branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                    // Use a fallback approach for getting the branch name
+                    branchName = sh(script: 'git symbolic-ref --short HEAD || git rev-parse --abbrev-ref HEAD || echo "unknown"', returnStdout: true).trim()
+                    if (branchName == 'HEAD' || branchName == 'unknown') {
+                        error "Failed to determine branch name, received: ${branchName}"
+                    }
                     echo "Branch name is: ${branchName}"
                 }
             }
         }
 
-        stage('Checkout GitSCM') {
-            steps {
-                echo "${params.GIT_BRANCH}"
-                git(url: 'https://github.com/JuankCadavid/testing_devops', branch: "${params.GIT_BRANCH}", credentialsId: 'github-key-pat')
-            }
-        }
 
         stage('Validate Branch') {
             steps {
                 script {
                     echo "Validating branch ${branchName}"
-                    def expectedBranch = 'master'
+                    expectedBranch = 'master'
                     if (branchName != expectedBranch) {
                         currentBuild.result = 'ABORTED'
                         error "Aborting build: Branch is ${branchName}, but expected ${branchName}"
@@ -46,14 +44,14 @@ pipeline {
 
         stage('Cloning Git') {
             steps {
-                echo "${params.GIT_BRANCH}"
+                echo "cloning ${params.GIT_BRANCH}"
                 git branch: 'master', url: 'https://github.com/JuankCadavid/testing_devops'
             }
         }
 
         stage('Print branch name') {
             steps {
-                echo "Branch name is where HP: ${env.BRANCH_NAME}"
+                echo "Branch name is where: ${env.BRANCH_NAME}"
                 sh 'git branch'
             }
         }
